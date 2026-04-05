@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI易經對話卜卦系統</title>
+
+<style>
+body{
+    background:#0f172a;
+    color:white;
+    font-family:Arial;
+    text-align:center;
+    padding:20px;
+}
+input{
+    padding:10px;
+    width:80%;
+    margin:10px;
+    border-radius:8px;
+    border:none;
+}
+button{
+    padding:12px 20px;
+    border:none;
+    border-radius:8px;
+    background:#22c55e;
+    color:white;
+}
+.hexagram{
+    font-size:34px;
+    margin:20px;
+}
+.result{
+    margin-top:20px;
+    line-height:1.6;
+}
+.chat{
+    margin-top:20px;
+    text-align:left;
+}
+.message{
+    margin:10px 0;
+}
+.user{ color:#38bdf8; }
+.ai{ color:#fbbf24; }
+</style>
+
+</head>
+
+<body>
+
+<h1>🔮 AI易經對話卜卦系統</h1>
+
+<input id="question" placeholder="請輸入你的問題">
+<br>
+<button onclick="divinate()">開始卜卦</button>
+
+<div class="hexagram" id="hexagram"></div>
+<div class="result" id="result"></div>
+
+<hr>
+
+<h3>🔁 延伸對話</h3>
+<input id="follow" placeholder="繼續提問（例如：那如果我現在不做呢？）">
+<br>
+<button onclick="askFollowUp()">送出</button>
+
+<div class="chat" id="chat"></div>
+
+<script>
+
+// ================= 基本資料 =================
+
+let history = [];
+let currentGua = "";
+let currentChangedGua = "";
+
+// 64卦名稱（簡化）
+const guaNames=[
+"乾","坤","屯","蒙","需","訟","師","比",
+"小畜","履","泰","否","同人","大有","謙","豫",
+"隨","蠱","臨","觀","噬嗑","賁","剝","復",
+"無妄","大畜","頤","大過","坎","離","咸","恆",
+"遯","大壯","晉","明夷","家人","睽","蹇","解",
+"損","益","夬","姤","萃","升","困","井",
+"革","鼎","震","艮","漸","歸妹","豐","旅",
+"巽","兌","渙","節","中孚","小過","既濟","未濟"
+];
+
+// ================= 卜卦邏輯 =================
+
+// 產生爻（6~9）
+function generateLine(){
+    return [6,7,8,9][Math.floor(Math.random()*4)];
+}
+
+// 轉陰陽
+function toBinary(n){
+    return (n===7||n===9)?1:0;
+}
+
+// 顯示符號
+function getSymbol(n){
+    if(n===6) return "⚋ (變)";
+    if(n===7) return "⚊";
+    if(n===8) return "⚋";
+    if(n===9) return "⚊ (變)";
+}
+
+// 算卦index
+function getIndex(lines){
+    let b=lines.map(toBinary).reverse().join("");
+    return parseInt(b,2)%64;
+}
+
+// 變卦
+function getChanged(lines){
+    return lines.map(n=>{
+        if(n===6) return 7;
+        if(n===9) return 8;
+        return n;
+    });
+}
+
+// ================= 進階解卦 =================
+
+function advancedInterpret(question, main, changed, changing){
+
+    let text="";
+
+    text += "🧠 問題解析：<br>";
+    text += "你問的是「"+question+"」，這代表你正在面對一個關於選擇與時機的課題。<br><br>";
+
+    text += "📍 當下狀態（主卦："+main+"）：<br>";
+
+    if(main==="乾"){
+        text += "目前屬於主動局勢，你具備推動事情的能力。<br>";
+    }else if(main==="坤"){
+        text += "目前適合承接與觀察，不宜強推。<br>";
+    }else if(main==="否"){
+        text += "當下氣機不通，容易遇到阻礙。<br>";
+    }else{
+        text += "你正處於一個變動中的狀態。<br>";
+    }
+
+    if(changing.length>0){
+        text += "<br>🔮 動爻分析：<br>";
+        changing.forEach(i=>{
+            text += "第"+(i+1)+"爻：代表第"+(i+1)+"階段出現變化。<br>";
+        });
+    }
+
+    text += "<br>🔄 未來走向（變卦："+changed+"）：<br>";
+
+    if(main==="否" && changed==="泰"){
+        text += "局勢將由阻轉通，是轉機之象。<br>";
+    }else if(main==="泰" && changed==="否"){
+        text += "需注意由盛轉衰。<br>";
+    }else{
+        text += "局勢將逐步變化，取決於你的行動。<br>";
+    }
+
+    text += "<br>✨ 行動建議：<br>";
+
+    if(main==="乾"){
+        text += "可以行動，但避免過度用力。";
+    }else if(main==="坤"){
+        text += "先穩住，順勢而為。";
+    }else if(main==="否"){
+        text += "先不要硬衝，調整策略。";
+    }else{
+        text += "重點在於判斷時機，而非速度。";
+    }
+
+    return text;
+}
+
+// ================= 起卦 =================
+
+function divinate(){
+
+    let question=document.getElementById("question").value || "未輸入問題";
+
+    let lines=[];
+    let display="";
+    let changing=[];
+
+    for(let i=0;i<6;i++){
+        let n=generateLine();
+        lines.push(n);
+
+        if(n===6||n===9) changing.push(i);
+
+        display = getSymbol(n)+"<br>"+display;
+    }
+
+    let mainIndex=getIndex(lines);
+    let changedLines=getChanged(lines);
+    let changedIndex=getIndex(changedLines);
+
+    let main=guaNames[mainIndex];
+    let changed=guaNames[changedIndex];
+
+    currentGua=main;
+    currentChangedGua=changed;
+
+    let result=advancedInterpret(question, main, changed, changing);
+
+    document.getElementById("hexagram").innerHTML=
+        "主卦："+main+" → 變卦："+changed+"<br><br>"+display;
+
+    document.getElementById("result").innerHTML=result;
+
+    history=[];
+    addMessage("AI","你所問之事已起卦：「"+main+"」，可以繼續深入詢問。");
+}
+
+// ================= 對話系統 =================
+
+function generateAIReply(userInput){
+
+    let base="當前卦象為「"+currentGua+" → "+currentChangedGua+"」。";
+
+    if(userInput.includes("工作")){
+        return base+" 這個問題顯示你在穩定與突破之間拉扯。";
+    }
+
+    if(userInput.includes("感情")){
+        return base+" 關鍵在於互動，而不是單方面期待。";
+    }
+
+    return base+" 建議回到當下局勢觀察，而不是急於決定。";
+}
+
+function askFollowUp(){
+
+    let input=document.getElementById("follow").value;
+
+    addMessage("使用者",input);
+
+    let reply=generateAIReply(input);
+
+    addMessage("AI",reply);
+}
+
+function addMessage(role,text){
+
+    history.push({role,text});
+
+    let chat="";
+
+    history.forEach(m=>{
+        chat += "<div class='message "+(m.role==="AI"?"ai":"user")+"'>"
+             + m.role + "：" + m.text + "</div>";
+    });
+
+    document.getElementById("chat").innerHTML=chat;
+}
+
+</script>
+
+</body>
+</html>
