@@ -1,0 +1,168 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI易經對話系統</title>
+
+<style>
+body{
+    background:#0f172a;
+    color:white;
+    font-family:Arial;
+    text-align:center;
+    padding:20px;
+}
+input{
+    padding:10px;
+    width:80%;
+    margin:10px;
+    border-radius:8px;
+}
+button{
+    padding:12px 20px;
+    border:none;
+    border-radius:8px;
+    background:#22c55e;
+    color:white;
+}
+.hexagram{
+    font-size:34px;
+    margin:20px;
+}
+.chat{
+    margin-top:20px;
+    text-align:left;
+}
+.message{
+    margin:10px 0;
+}
+.user{ color:#38bdf8; }
+.ai{ color:#fbbf24; }
+</style>
+
+</head>
+
+<body>
+
+<h1>🔮 AI易經對話系統</h1>
+
+<input id="question" placeholder="輸入你的問題">
+<br>
+<button onclick="divinate()">起卦</button>
+
+<div class="hexagram" id="hexagram"></div>
+
+<hr>
+
+<h3>🔁 延伸對話</h3>
+<input id="follow" placeholder="繼續提問">
+<br>
+<button onclick="askFollowUp()">送出</button>
+
+<div class="chat" id="chat"></div>
+
+<script>
+
+let history = [];
+let currentGua = "";
+
+// 卦名（簡化）
+const guaNames=[
+"乾","坤","屯","蒙","需","訟","師","比",
+"小畜","履","泰","否","同人","大有","謙","豫",
+"隨","蠱","臨","觀","噬嗑","賁","剝","復",
+"無妄","大畜","頤","大過","坎","離","咸","恆",
+"遯","大壯","晉","明夷","家人","睽","蹇","解",
+"損","益","夬","姤","萃","升","困","井",
+"革","鼎","震","艮","漸","歸妹","豐","旅",
+"巽","兌","渙","節","中孚","小過","既濟","未濟"
+];
+
+// 生成卦
+function generateLine(){
+    return [6,7,8,9][Math.floor(Math.random()*4)];
+}
+
+function toBinary(n){
+    return (n===7||n===9)?1:0;
+}
+
+function getIndex(lines){
+    let b=lines.map(toBinary).reverse().join("");
+    return parseInt(b,2)%64;
+}
+
+// 起卦
+function divinate(){
+
+    let q=document.getElementById("question").value;
+
+    let lines=[];
+    let display="";
+    let changing=[];
+
+    for(let i=0;i<6;i++){
+        let n=generateLine();
+        lines.push(n);
+        display += (toBinary(n)? "⚊":"⚋") + "<br>";
+    }
+
+    let index=getIndex(lines);
+    currentGua=guaNames[index];
+
+    document.getElementById("hexagram").innerHTML=
+        "主卦："+currentGua+"<br><br>"+display;
+
+    // 初始化對話
+    history=[];
+    addMessage("AI","你所問之事已起卦：「"+currentGua+"」，請繼續提問或深入問題。");
+}
+
+// AI 回覆（可替換成真正 API）
+function generateAIReply(userInput){
+
+    let base = "當前卦象為「"+currentGua+"」。";
+
+    if(userInput.includes("工作")){
+        return base + "此問題顯示你在選擇與穩定之間，需要權衡內在動機。";
+    }
+
+    if(userInput.includes("感情")){
+        return base + "此卦顯示關係中存在互動變化，關鍵在於溝通與理解。";
+    }
+
+    return base + "此問題建議回到本心，觀察當下局勢，而非急於決策。";
+}
+
+// 延伸提問
+function askFollowUp(){
+
+    let input=document.getElementById("follow").value;
+
+    addMessage("使用者",input);
+
+    let reply=generateAIReply(input);
+
+    addMessage("AI",reply);
+}
+
+// 顯示對話
+function addMessage(role,text){
+
+    history.push({role,text});
+
+    let chat="";
+
+    history.forEach(m=>{
+        chat += "<div class='message "+(m.role==="AI"?"ai":"user")+"'>"
+             + m.role + "：" + m.text + "</div>";
+    });
+
+    document.getElementById("chat").innerHTML=chat;
+}
+
+</script>
+
+</body>
+</html>
